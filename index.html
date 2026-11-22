@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حرب الطعمية 🧆</title>
+<style>
+*{box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#ffd23f;color:#222;overflow:hidden;height:100vh;touch-action:manipulation}
+#hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px;font-size:20px;font-weight:bold;background:#ff6b35;color:#fff;z-index:5}
+#area{position:absolute;inset:50px 0 0 0;transition:filter .3s}
+.t{position:absolute;font-size:56px;cursor:pointer;line-height:1}
+#msg{position:fixed;bottom:20px;left:0;right:0;text-align:center;font-size:24px;font-weight:bold;pointer-events:none;z-index:6;min-height:36px;padding:0 10px}
+#screen{position:fixed;inset:0;background:rgba(255,210,63,.96);z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+#screen h1{font-size:38px;margin:0 0 10px}
+#screen p{font-size:19px;max-width:420px}
+button{font-size:24px;padding:12px 30px;border:0;border-radius:40px;background:#e63946;color:#fff;font-weight:bold;cursor:pointer;margin-top:15px}
+button:active{transform:scale(.93)}
+.shake{animation:sh .3s}
+@keyframes sh{25%{transform:translateX(-10px) rotate(-2deg)}75%{transform:translateX(10px) rotate(2deg)}}
+.pop{position:absolute;font-weight:bold;font-size:26px;pointer-events:none;animation:up .8s forwards}
+@keyframes up{to{transform:translateY(-70px);opacity:0}}
+</style>
+</head>
+<body>
+<div id="hud"><span>🧆 <b id="sc">0</b></span><span>⏱ <b id="tm">30</b></span></div>
+<div id="area"></div>
+<div id="msg"></div>
+<div id="screen">
+  <h1>🧆 حرب الطعمية 🧆</h1>
+  <p id="intro">الطعمية بتهرب منك! اضغط عليها قبل ما تتأكل لوحدها.<br>🧅 البصلة هتخليك تعيط، 🐔 الفرخة زعلانة منك، 💩 ... ملكش دعوة.</p>
+  <button id="go">يلا نبدأ الهبل</button>
+</div>
+<script>
+const area=document.getElementById('area'),sc=document.getElementById('sc'),tm=document.getElementById('tm'),
+msg=document.getElementById('msg'),screen_=document.getElementById('screen'),intro=document.getElementById('intro'),go=document.getElementById('go');
+const good=["الله! طعمية سخنة 🔥","ضربة معلم!","أمك هتفرح بيك","يا بطل الفلافل","ريحتها حلوة أوي","اتفضل يا باشا","كده تمام، كمّل"];
+const onion=["🧅 عيني! مين فتح البصل؟!","بتعيط ليه يا عم؟","دموعك غالية على بصلة؟"];
+const chick=["الفرخة: ليه كده يا ظالم؟ 🐔","الفرخة هتبلغ عنك","كاك كاك كاك! (يعني حرام عليك)","الفرخة: أنا كنت ماشية في حالي"];
+const poop=["💩 إيه ده؟! امسح إيدك حالًا","ريحتها وصلت لهنا","مين اللي جاب ده؟"];
+const miss=["ده انت أعمى؟","فاتتك الطعمية يا معلم","إيدك تقيلة النهاردة"];
+let score,time,items,run,last,iv1,iv2;
+function say(t){msg.textContent=t}
+function pop(x,y,t,c){const p=document.createElement('div');p.className='pop';p.style.cssText=`left:${x}px;top:${y}px;color:${c}`;p.textContent=t;document.body.appendChild(p);setTimeout(()=>p.remove(),800)}
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function spawn(){
+  if(!run)return;
+  const r=Math.random(),type=r<.55?'f':r<.72?'o':r<.87?'c':'p';
+  const e=document.createElement('div');e.className='t';
+  e.textContent={f:'🧆',o:'🧅',c:'🐔',p:'💩'}[type];
+  const o={e,type,x:Math.random()*(innerWidth-70),y:Math.random()*(innerHeight-150),
+    vx:(Math.random()-.5)*(4+score/8),vy:(Math.random()-.5)*(4+score/8),life:2200+Math.random()*1500};
+  const hit=ev=>{ev.preventDefault();if(!run||o.dead)return;o.dead=1;e.remove();
+    const px=o.x,py=o.y+50;
+    if(type==='f'){score++;pop(px,py,'+1','#2a9d3f');say(rnd(good))}
+    else if(type==='c'){score+=5;pop(px,py,'+5 😳','#c77700');say(rnd(chick))}
+    else if(type==='o'){score-=3;pop(px,py,'-3','#c1121f');say(rnd(onion));area.style.filter='blur(6px)';setTimeout(()=>area.style.filter='',1800)}
+    else{score-=5;pop(px,py,'-5','#6b3e00');say(rnd(poop));document.body.classList.add('shake');setTimeout(()=>document.body.classList.remove('shake'),300)}
+    sc.textContent=score};
+  e.addEventListener('pointerdown',hit);
+  area.appendChild(e);items.push(o);
+}
+function loop(t){
+  if(!run)return;
+  const dt=t-last;last=t;
+  items=items.filter(o=>{
+    if(o.dead)return false;
+    o.life-=dt;
+    if(o.life<=0){o.e.remove();if(o.type==='f'&&Math.random()<.4)say(rnd(miss));return false}
+    o.x+=o.vx;o.y+=o.vy;
+    if(o.x<0||o.x>innerWidth-60)o.vx*=-1;
+    if(o.y<0||o.y>innerHeight-130)o.vy*=-1;
+    o.e.style.transform=`translate(${o.x}px,${o.y}px) rotate(${o.x%360}deg)`;
+    o.e.style.left=0;o.e.style.top=0;
+    return true});
+  requestAnimationFrame(loop);
+}
+function end(){
+  run=false;clearInterval(iv1);clearInterval(iv2);area.innerHTML='';area.style.filter='';
+  let t=score<0?"نتيجتك سالب! حتى الطعمية اتبرأت منك 💀":score<10?"ضعيف يا صاحبي. روح نام 😴":score<25?"كويس… للأسف 😐":score<45?"محترف طعمية! الحي كله فخور بيك 🏆":"أسطورة الفلافل! تتعمل لك تمثال 🗿";
+  intro.innerHTML=`<b style="font-size:30px">${score}</b> نقطة<br>${t}`;
+  go.textContent='تاني؟ انت مش بتتعلم 🤦';screen_.style.display='flex';say('');
+}
+go.onclick=()=>{
+  score=0;time=30;items=[];run=true;sc.textContent=0;tm.textContent=30;screen_.style.display='none';say('امسك الطعمية!');
+  last=performance.now();requestAnimationFrame(loop);
+  iv1=setInterval(spawn,550);
+  iv2=setInterval(()=>{tm.textContent=--time;if(time<=0)end()},1000);
+};
+</script>
+</body>
+</html>
